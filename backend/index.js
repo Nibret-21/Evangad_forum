@@ -1,26 +1,28 @@
-
-import express from "express";
-import { db } from "./db/config.js";
+import express from 'express';
+import cors from 'cors';
+import 'dotenv/config'; 
 import { mainRouter } from "./src/api/routes.js";
 import { errorHandler } from "./src/middleware/error-handler.js";
-import cors from "cors";
 
 const app = express();
+
 const port = process.env.PORT || 3777;
-console.log(port);
-// Middleware
+
+/// middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Health check
-app.get("/health", (req, res) => {
-  res.json({ status: "ok", timestamp: new Date() });
+app.get('/health', (req, res) => {
+    res.json({ status: 'ok', timestamp: new Date() });
 });
 
 app.use("/api", mainRouter);
 
+
 app.use(errorHandler);
+
 
 // Start server
 const startServer = async () => {
@@ -47,4 +49,4 @@ const startServer = async () => {
   }
 };
 
-startServer();
+startServer();  /// here we are calling the asyn function
