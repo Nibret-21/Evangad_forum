@@ -14,7 +14,7 @@ export const authenticateUser = (req, res, next) => {
     throw new UnauthenticatedError('Authentication invalid');
   }
 
-  const token = authHeader.split(' ')[1];
+  const token = authHeader.split(' ')[1];//verify token and extract user info
 
   try {
     const payload = jwt.verify(token, JWT_SECRET);
