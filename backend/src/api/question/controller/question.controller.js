@@ -15,6 +15,7 @@ import {
 } from "../service/genaiTextCoach.service.js";
 
 // Controller for creating a new question.(posting question)
+
 // This endpoint needs authenticated user information from req.user.
 export const createQuestionController = async (req, res, next) => {
   try {
