@@ -8,7 +8,7 @@ mainRouter.use("/auth", authRoutes);
 //api/questions
 mainRouter.use("/questions", questionsRoutes);
 
-console.log("Answers route loaded");
+// console.log("Answers route loaded");
 //api/answers
 mainRouter.use("/answers", answersRoutes);
 
