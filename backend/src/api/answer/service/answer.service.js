@@ -1,5 +1,5 @@
-import { safeExecute } from "../../../../db/config.js";
-import { BadRequestError, NotFoundError } from "../../../utils/errors/index.js";
+import {safeExecute} from "../../../../db/config.js";
+import {BadRequestError, NotFoundError} from "../../../utils/errors/index.js";
 
 const unwrapRows = (result) => {
   if (Array.isArray(result) && Array.isArray(result[0])) return result[0];
@@ -11,11 +11,7 @@ const unwrapInsertResult = (result) => {
   return result;
 };
 
-export const createAnswerService = async ({
-  userId,
-  questionHash,
-  content,
-}) => {
+export const createAnswerService = async ({userId, questionHash, content}) => {
   const questionSql = `
     SELECT question_id AS questionId, user_id AS authorId
     FROM questions
