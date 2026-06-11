@@ -1,5 +1,5 @@
-import {safeExecute} from "../../../../db/config.js";
-import {BadRequestError, NotFoundError} from "../../../utils/errors/index.js";
+import { safeExecute } from "../../../../db/config.js";
+import { BadRequestError, NotFoundError } from "../../../utils/errors/index.js";
 
 const unwrapRows = (result) => {
   if (Array.isArray(result) && Array.isArray(result[0])) return result[0];
@@ -11,14 +11,17 @@ const unwrapInsertResult = (result) => {
   return result;
 };
 
-export const createAnswerService = async ({userId, questionHash, content}) => {
+export const createAnswerService = async ({ userId, questionId, content }) => {
   const questionSql = `
-    SELECT question_id AS questionId, user_id AS authorId
+    SELECT 
+      question_id AS questionId,
+      question_hash AS questionHash,
+      user_id AS authorId
     FROM questions
-    WHERE question_hash = ?
+    WHERE question_id = ?
   `;
 
-  const questionResult = await safeExecute(questionSql, [questionHash]);
+  const questionResult = await safeExecute(questionSql, [questionId]);
   const questionRows = unwrapRows(questionResult);
 
   if (!questionRows.length) {
@@ -47,7 +50,7 @@ export const createAnswerService = async ({userId, questionHash, content}) => {
   return {
     id: result.insertId,
     questionId: question.questionId,
-    questionHash,
+    questionHash: question.questionHash,
     content,
     userId,
   };

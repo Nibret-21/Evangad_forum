@@ -1,34 +1,32 @@
-// /**
-//  * Dashboard: default home after login; question list, quick actions, URL-driven search.
-//  * Data: `questionService` (keyword `q`, semantic `semantic`, or full list).
-//  */
-/**
- * Dashboard: default home after login; question list, quick actions, URL-driven search.
- * Data: getQuestions for keyword search, searchQuestionsSemantic for AI similarity search.
- */
-import styles from "./Dashboard.module.css";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import {
   getQuestions,
   searchQuestionsSemantic,
 } from "../../services/question/question.service";
+import styles from "./Dashboard.module.css";
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
 
   const [questions, setQuestions] = useState([]);
-  const [search, setSearch] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
 
-  const firstName = user?.firstName?.trim();
+  const firstName = user?.firstName?.trim() || "there";
 
-  const welcomeLine = firstName
-    ? `Good to see you, ${firstName}.`
-    : "Welcome to the forum.";
+  const stats = useMemo(() => {
+    const total = questions.length;
+    const replies = questions.reduce(
+      (sum, q) => sum + Number(q.answerCount || 0),
+      0,
+    );
+    const unanswered = questions.filter((q) => !q.answerCount).length;
+
+    return { total, replies, unanswered };
+  }, [questions]);
 
   const loadQuestions = async () => {
     try {
@@ -39,36 +37,21 @@ export default function Dashboard() {
       const semantic = searchParams.get("semantic");
 
       if (semantic) {
-        setSearch(semantic);
-
         const result = await searchQuestionsSemantic(semantic);
         setQuestions(result.data || []);
         return;
       }
 
       if (keyword) {
-        setSearch(keyword);
-
-        const result = await getQuestions({
-          search: keyword,
-          page: 1,
-          limit: 10,
-        });
-
+        const result = await getQuestions({ search: keyword });
         setQuestions(result.data || []);
         return;
       }
 
-      setSearch("");
-
-      const result = await getQuestions({
-        page: 1,
-        limit: 10,
-      });
-
+      const result = await getQuestions();
       setQuestions(result.data || []);
     } catch (error) {
-      setMessage(error.response?.data?.message || "Failed to load questions");
+      setMessage(error.response?.data?.msg || "Failed to load questions.");
     } finally {
       setLoading(false);
     }
@@ -78,229 +61,108 @@ export default function Dashboard() {
     loadQuestions();
   }, [searchParams]);
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-
-    if (!search.trim()) {
-      setSearchParams({});
-      return;
-    }
-
-    setSearchParams({
-      q: search.trim(),
-    });
-  };
-
-  const handleAiSearch = () => {
-    if (!search.trim()) {
-      setMessage("Please type something before AI Search.");
-      return;
-    }
-
-    setSearchParams({
-      semantic: search.trim(),
-    });
-  };
-
-  const handleReset = () => {
-    setSearch("");
-    setSearchParams({});
-  };
-
   return (
-    <div className={styles.container}>
-      <h2 className={styles.welcome}>{welcomeLine}</h2>
+    <div className={styles.page}>
+      <section className={styles.hero}>
+        <span>FORUM HOME</span>
 
-      <div className={styles.actions}>
-        <Link to="/questions/ask">
-          <button className={styles.askButton}>Ask Question</button>
-        </Link>
-      </div>
+        <h1>Good to see you, {firstName}.</h1>
 
-      <form onSubmit={handleSearch} className={styles.searchForm}>
-        <input
-          type="text"
-          placeholder="Search questions..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className={styles.searchInput}
-        />
+        <p>Start a topic, revisit your own threads, or skim the live feed.</p>
 
-        <button type="submit" className={styles.searchButton}>
-          Search
-        </button>
-
-        <button
-          type="button"
-          onClick={handleAiSearch}
-          className={styles.aiButton}
-        >
-          AI Search
-        </button>
-
-        <button
-          type="button"
-          onClick={handleReset}
-          style={{ padding: "10px", marginLeft: "8px" }}
-        >
-          Reset
-        </button>
-      </form>
-
-      {loading && <p>Loading questions...</p>}
-      {message && <p>{message}</p>}
-
-      {!loading && questions.length === 0 && <p>No questions found.</p>}
-
-      {questions.map((question) => (
-        <div
-          key={question.questionHash || question.id}
-          style={{
-            border: "1px solid #ddd",
-            padding: "16px",
-            borderRadius: "8px",
-            marginBottom: "12px",
-          }}
-        >
-          <Link to={`/questions/${question.questionHash}`}>
-            <h3>{question.title}</h3>
+        <div className={styles.quickActions}>
+          <Link to="/questions/ask" className={styles.actionCard}>
+            <strong>New question</strong>
+            <small>Share context, errors, and what you already tried</small>
           </Link>
 
-          <p>{question.content}</p>
+          <Link to="/my-questions" className={styles.actionCard}>
+            <strong>Your topics</strong>
+            <small>Filtered list of threads you authored</small>
+          </Link>
 
-          <small>
-            Answers: {question.answerCount || 0} | By:{" "}
-            {question.author?.firstName} {question.author?.lastName}
-          </small>
-
-          {question.score && (
-            <p>
-              <small>Similarity score: {question.score}</small>
-            </p>
-          )}
+          <Link to="/rag-documents" className={styles.actionCard}>
+            <strong>Knowledge base</strong>
+            <small>Upload docs and ask retrieval-backed questions</small>
+          </Link>
         </div>
-      ))}
+
+        <div className={styles.stats}>
+          <div>
+            <small>Questions</small>
+            <strong>{stats.total}</strong>
+          </div>
+
+          <div>
+            <small>Replies</small>
+            <strong>{stats.replies}</strong>
+          </div>
+
+          <div>
+            <small>Unanswered</small>
+            <strong>{stats.unanswered}</strong>
+          </div>
+
+          <div>
+            <small>Yours</small>
+            <strong>
+              {questions.filter((q) => q.author?.id === user?.id).length}
+            </strong>
+          </div>
+        </div>
+      </section>
+
+      <section className={styles.feed}>
+        <div className={styles.feedHeader}>
+          <div>
+            <h2>Discussion feed</h2>
+            <p>Your threads use a slim left accent in this list.</p>
+          </div>
+
+          <Link to="/questions/ask" className={styles.orangeButton}>
+            New Question
+          </Link>
+        </div>
+
+        {loading && (
+          <div className={styles.loadingBox}>Loading recent questions...</div>
+        )}
+
+        {!loading && message && (
+          <div className={styles.errorBox}>{message}</div>
+        )}
+
+        {!loading && !message && questions.length === 0 && (
+          <div className={styles.emptyBox}>
+            No questions found. Be the first to ask!
+          </div>
+        )}
+
+        {!loading &&
+          !message &&
+          questions.map((question) => (
+            <Link
+              key={question.questionHash || question.id}
+              to={`/questions/${question.questionHash}`}
+              className={styles.thread}
+            >
+              <div className={styles.avatar}>
+                {(question.author?.firstName || "U")[0]}
+              </div>
+
+              <div>
+                <h3>{question.title}</h3>
+                <p>{question.content}</p>
+                <small>
+                  {question.author?.firstName || "Unknown"}{" "}
+                  {question.author?.lastName || ""} ·{" "}
+                  {question.answerCount || 0} replies
+                  {question.score ? ` · score ${question.score}` : ""}
+                </small>
+              </div>
+            </Link>
+          ))}
+      </section>
     </div>
   );
 }
-// import { useEffect, useState } from "react";
-// import { Link } from "react-router-dom";
-// import { useAuth } from "../../contexts/AuthContext";
-// import {
-//   getQuestions,
-//   searchQuestionsSemantic,
-// } from "../../services/question/question.service";
-
-// export default function Dashboard() {
-//   const { user } = useAuth();
-
-//   const [questions, setQuestions] = useState([]);
-//   const [search, setSearch] = useState("");
-//   const [message, setMessage] = useState("");
-//   const [loading, setLoading] = useState(true);
-
-//   const firstName = user?.firstName?.trim();
-//   const welcomeLine = firstName
-//     ? `Good to see you, ${firstName}.`
-//     : "Welcome to the forum.";
-
-//   const fetchQuestions = async () => {
-//     try {
-//       setLoading(true);
-//       setMessage("");
-
-//       const result = search.trim()
-//         ? await questionService.searchQuestions(search)
-//         : await questionService.getQuestions();
-
-//       setQuestions(result.data || []);
-//     } catch (error) {
-//       setMessage(error.response?.data?.msg || "Failed to load questions");
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   useEffect(() => {
-//     fetchQuestions();
-//   }, []);
-
-//   const handleSearch = (e) => {
-//     e.preventDefault();
-//     fetchQuestions();
-//   };
-
-//   return (
-//     <div>
-//       <h3>{welcomeLine}</h3>
-
-//       <div style={{ margin: "20px 0" }}>
-//         <Link to="/questions/ask">
-//           <button>Ask Question</button>
-//         </Link>
-//       </div>
-
-//       <form onSubmit={handleSearch} style={{ marginBottom: "20px" }}>
-//         <input
-//           type="text"
-//           placeholder="Search questions..."
-//           value={search}
-//           onChange={(e) => setSearch(e.target.value)}
-//           style={{ padding: "10px", width: "70%" }}
-//         />
-
-//         <button type="submit" style={{ padding: "10px", marginLeft: "8px" }}>
-//           Search
-//         </button>
-
-//         <button
-//           type="button"
-//           onClick={() => {
-//             setSearch("");
-//             fetchQuestions();
-//           }}
-//           style={{ padding: "10px", marginLeft: "8px" }}
-//         >
-//           Reset
-//         </button>
-//       </form>
-
-//       {loading && <p>Loading questions...</p>}
-
-//       {message && <p>{message}</p>}
-
-//       {!loading && questions.length === 0 && <p>No questions found.</p>}
-
-//       <div>
-//         {questions.map((question) => (
-//           <div
-//             key={question.questionHash}
-//             style={{
-//               border: "1px solid #ddd",
-//               padding: "16px",
-//               borderRadius: "8px",
-//               marginBottom: "12px",
-//             }}
-//           >
-//             <Link to={`/questions/${question.questionHash}`}>
-//               <h3>{question.title}</h3>
-//             </Link>
-
-//             <p>{question.content}</p>
-
-//             <small>
-//               Answers: {question.answerCount || 0} | By:{" "}
-//               {question.author?.firstName} {question.author?.lastName}
-//             </small>
-
-//             {question.score && (
-//               <p>
-//                 <small>Similarity score: {question.score}</small>
-//               </p>
-//             )}
-//           </div>
-//         ))}
-//       </div>
-//     </div>
-//   );
-// }

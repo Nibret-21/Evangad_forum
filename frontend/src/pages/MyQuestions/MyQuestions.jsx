@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { getQuestions } from "../../services/question/question.service";
+import { getMyQuestions } from "../../services/question/question.service";
+import styles from "./MyQuestions.module.css";
 
 export default function MyQuestions() {
   const [questions, setQuestions] = useState([]);
@@ -12,17 +13,10 @@ export default function MyQuestions() {
       setLoading(true);
       setMessage("");
 
-      const result = await getQuestions({
-        mine: "true",
-        page: 1,
-        limit: 10,
-      });
-
+      const result = await getMyQuestions();
       setQuestions(result.data || []);
     } catch (error) {
-      setMessage(
-        error.response?.data?.message || "Failed to load my questions",
-      );
+      setMessage(error.response?.data?.msg || "Failed to fetch questions.");
     } finally {
       setLoading(false);
     }
@@ -33,96 +27,60 @@ export default function MyQuestions() {
   }, []);
 
   return (
-    <div>
-      <h2>My Questions</h2>
-
-      {loading && <p>Loading my questions...</p>}
-      {message && <p>{message}</p>}
-
-      {!loading && questions.length === 0 && (
-        <p>You have not posted any questions yet.</p>
-      )}
-
-      {questions.map((question) => (
-        <div
-          key={question.questionHash || question.id}
-          style={{
-            border: "1px solid #ddd",
-            padding: "16px",
-            borderRadius: "8px",
-            marginBottom: "12px",
-          }}
-        >
-          <Link to={`/questions/${question.questionHash}`}>
-            <h3>{question.title}</h3>
-          </Link>
-
-          <p>{question.content}</p>
-
-          <small>Answers: {question.answerCount || 0}</small>
+    <div className={styles.page}>
+      <section className={styles.hero}>
+        <div>
+          <span>Your Workspace</span>
+          <h1>Your topics</h1>
+          <p>
+            Only questions you created. Open one to read answers or add follow-ups.
+            Rows use the same left accent as your threads on Home.
+          </p>
         </div>
-      ))}
+
+        <Link to="/questions/ask" className={styles.newButton}>
+          + New question
+        </Link>
+      </section>
+
+      <section className={styles.content}>
+        {loading && (
+          <div className={styles.loadingBox}>Loading your questions...</div>
+        )}
+
+        {!loading && message && (
+          <div className={styles.errorBox}>{message}</div>
+        )}
+
+        {!loading && !message && questions.length === 0 && (
+          <div className={styles.emptyBox}>
+            You have not asked any questions yet. Use Ask a Question in the
+            sidebar to start.
+          </div>
+        )}
+
+        {!loading &&
+          !message &&
+          questions.map((question) => (
+            <Link
+              key={question.questionHash || question.id}
+              to={`/questions/${question.questionHash}`}
+              className={styles.topicRow}
+            >
+              <div className={styles.accent}></div>
+
+              <div className={styles.topicBody}>
+                <h3>{question.title}</h3>
+                <p>{question.content}</p>
+
+                <small>
+                  {question.answerCount || 0} replies ·{" "}
+                  {new Date(question.createdAt).toLocaleDateString()}
+                </small>
+              </div>
+            </Link>
+          ))}
+      </section>
     </div>
   );
 }
-// import { useEffect, useState } from "react";
-// import { Link } from "react-router-dom";
-// import { getQuestions } from "../../services/question/question.service";
-
-// export default function MyQuestions() {
-//   const [questions, setQuestions] = useState([]);
-//   const [message, setMessage] = useState("");
-//   const [loading, setLoading] = useState(true);
-
-//   const loadMyQuestions = async () => {
-//     try {
-//       setLoading(true);
-//       setMessage("");
-
-//       const result = await getQuestions();
-//       setQuestions(result.data || []);
-//     } catch (error) {
-//       setMessage(error.response?.data?.msg || "Failed to load my questions");
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   useEffect(() => {
-//     loadMyQuestions();
-//   }, []);
-
-//   if (loading) {
-//     return <p>Loading my questions...</p>;
-//   }
-
-//   return (
-//     <div>
-//       <h2>My Questions</h2>
-
-//       {message && <p>{message}</p>}
-
-//       {questions.length === 0 && <p>You have not posted any questions yet.</p>}
-
-//       {questions.map((question) => (
-//         <div
-//           key={question.questionHash}
-//           style={{
-//             border: "1px solid #ddd",
-//             padding: "16px",
-//             borderRadius: "8px",
-//             marginBottom: "12px",
-//           }}
-//         >
-//           <Link to={`/questions/${question.questionHash}`}>
-//             <h3>{question.title}</h3>
-//           </Link>
-
-//           <p>{question.content}</p>
-
-//           <small>Answers: {question.answerCount || 0}</small>
-//         </div>
-//       ))}
-//     </div>
-//   );
-// }

@@ -5,7 +5,7 @@ export const createAnswerController = async (req, res, next) => {
   try {
     const answer = await createAnswerService({
       userId: req.user.id,
-      questionHash: req.body.questionHash,
+      questionId: req.body.questionId,
       content: req.body.content,
     });
 
