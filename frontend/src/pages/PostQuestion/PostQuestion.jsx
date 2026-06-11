@@ -4,6 +4,7 @@ import {
   createQuestion,
   draftCoach,
 } from "../../services/question/question.service";
+import styles from "../PostQuestion/PostQuestion.module.css";
 
 export default function PostQuestion() {
   const navigate = useNavigate();
@@ -11,20 +12,57 @@ export default function PostQuestion() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [tips, setTips] = useState([]);
-  const [message, setMessage] = useState("");
+  const [status, setStatus] = useState({ type: "", text: "" });
   const [loading, setLoading] = useState(false);
   const [coachLoading, setCoachLoading] = useState(false);
 
+  const titleCount = title.trim().length;
+  const contentCount = content.trim().length;
+
+  const validateForm = () => {
+    if (title.trim().length < 5) {
+      setStatus({
+        type: "error",
+        text: "Title must be at least 5 characters.",
+      });
+      return false;
+    }
+
+    if (content.trim().length < 10) {
+      setStatus({
+        type: "error",
+        text: "Question details must be at least 10 characters.",
+      });
+      return false;
+    }
+
+    return true;
+  };
+
   const handleDraftCoach = async () => {
+    if (content.trim().length < 10) {
+      setStatus({
+        type: "error",
+        text: "Write at least 10 characters before using AI suggestions.",
+      });
+      return;
+    }
+
     try {
       setCoachLoading(true);
-      setMessage("");
+      setStatus({ type: "", text: "" });
 
-      const result = await draftCoach({ title, content });
+      const result = await draftCoach({
+        title: title.trim(),
+        content: content.trim(),
+      });
 
       setTips(result.data?.tips || []);
     } catch (error) {
-      setMessage(error.response?.data?.message || "Failed to get AI tips");
+      setStatus({
+        type: "error",
+        text: error.response?.data?.msg || "Failed to get AI suggestions.",
+      });
     } finally {
       setCoachLoading(false);
     }
@@ -33,76 +71,153 @@ export default function PostQuestion() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (!validateForm()) return;
+
     try {
       setLoading(true);
-      setMessage("");
-
-      const result = await createQuestion({
-        title,
-        content,
+      setStatus({
+        type: "info",
+        text: "Posting your question...",
       });
 
-      navigate(`/questions/${result.data.questionHash}`);
+      const result = await createQuestion({
+        title: title.trim(),
+        content: content.trim(),
+      });
+
+      setStatus({
+        type: "success",
+        text: "Question posted successfully.",
+      });
+
+      setTimeout(() => {
+        navigate(`/questions/${result.data.questionHash}`);
+      }, 600);
     } catch (error) {
-      setMessage(error.response?.data?.message || "Failed to post question");
+      setStatus({
+        type: "error",
+        text:
+          error.response?.data?.msg ||
+          "Failed to post question. Please try again.",
+      });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div>
-      <h2>Ask a Question</h2>
+    <div className={styles.page}>
+      <section className={styles.header}>
+        <span>ASK THE COMMUNITY</span>
+        <h1>Publish to the forum</h1>
+        <p>
+          Public threads help the whole cohort. Write as if a classmate will
+          debug your issue tomorrow. They only know what you put on the page.
+        </p>
+      </section>
 
-      {message && <p>{message}</p>}
+      <section className={styles.guide}>
+        <h3>Write questions people can answer in one pass</h3>
+        <p>
+          Mentors volunteer their time. Give them runnable context, expected vs
+          actual behavior, and a tight scope so they can reproduce the issue
+          without guessing your setup.
+        </p>
 
-      <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: "12px" }}>
+        <div className={styles.guideGrid}>
+          <div>
+            <h4>Checklist before you post</h4>
+            <ul>
+              <li>Give an exact, searchable title.</li>
+              <li>Show the error message or broken behavior.</li>
+              <li>Include the smallest relevant code snippet.</li>
+              <li>Explain what you expected to happen.</li>
+            </ul>
+          </div>
+
+          <div>
+            <h4>Validation rules</h4>
+            <ul>
+              <li>Title length: at least 5 characters.</li>
+              <li>Body length: at least 10 characters.</li>
+              <li>Single topic: avoid combining unrelated issues.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <form className={styles.card} onSubmit={handleSubmit}>
+        {status.text && (
+          <div className={`${styles.status} ${styles[status.type]}`}>
+            {status.text}
+          </div>
+        )}
+
+        <div className={styles.field}>
           <label>Title</label>
+          <p>
+            Be specific and imagine you are asking a question to another person.
+          </p>
           <input
-            type="text"
             value={title}
+            maxLength={255}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Example: How do I connect React to Express?"
-            style={{ display: "block", width: "100%", padding: "10px" }}
+            placeholder="e.g. How do I handle state management using Context API in React?"
           />
         </div>
 
-        <div style={{ marginBottom: "12px" }}>
-          <label>Content</label>
+        <div className={styles.field}>
+          <div className={styles.row}>
+            <div>
+              <label>What are the details of your problem?</label>
+              <p>Include the problem and output or error so others can help.</p>
+            </div>
+            <small>{contentCount} characters</small>
+          </div>
+
           <textarea
+            rows={10}
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder="Explain your problem clearly..."
-            rows="8"
-            style={{ display: "block", width: "100%", padding: "10px" }}
+            placeholder="Include all the information someone would need to answer your question..."
           />
         </div>
 
-        <button
-          type="button"
-          onClick={handleDraftCoach}
-          disabled={coachLoading}
-        >
-          {coachLoading ? "Checking..." : "AI Draft Coach"}
-        </button>
+        {tips.length > 0 && (
+          <div className={styles.tips}>
+            <h3>AI Suggestions</h3>
+            <ul>
+              {tips.map((tip, index) => (
+                <li key={index}>{tip}</li>
+              ))}
+            </ul>
+          </div>
+        )}
 
-        <button type="submit" disabled={loading} style={{ marginLeft: "10px" }}>
-          {loading ? "Posting..." : "Post Question"}
-        </button>
-      </form>
+        <div className={styles.footer}>
+          <button
+            type="button"
+            onClick={handleDraftCoach}
+            disabled={coachLoading || loading}
+          >
+            {coachLoading ? "Checking..." : "AI suggestions"}
+          </button>
 
-      {tips.length > 0 && (
-        <div style={{ marginTop: "20px" }}>
-          <h3>AI Suggestions</h3>
-          <ul>
-            {tips.map((tip, index) => (
-              <li key={index}>{tip}</li>
-            ))}
-          </ul>
+          <div className={styles.rightActions}>
+            <button
+              type="button"
+              className={styles.cancel}
+              onClick={() => navigate("/dashboard")}
+            >
+              Cancel
+            </button>
+
+            <button type="submit" className={styles.submit} disabled={loading}>
+              {loading ? "Posting..." : "Post Question"}
+            </button>
+          </div>
         </div>
-      )}
+      </form>
     </div>
   );
 }
-

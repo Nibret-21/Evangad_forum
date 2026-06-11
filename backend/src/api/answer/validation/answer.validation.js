@@ -2,10 +2,12 @@ import { body } from "express-validator";
 import { validationErrorHandler } from "../../../middleware/validation-handler.js";
 
 export const createAnswerValidation = [
-  body("questionHash")
-    .trim()
+  body("questionId")
     .notEmpty()
-    .withMessage("Question hash is required"),
+    .withMessage("Question ID is required")
+    .isInt({ min: 1 })
+    .withMessage("Question ID must be a valid number")
+    .toInt(),
 
   body("content")
     .trim()

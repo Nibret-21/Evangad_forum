@@ -119,7 +119,7 @@ export const getSimilarQuestionsController = async (req, res, next) => {
   try {
     const result = await getSimilarQuestionsService({
       questionHash: req.params.questionHash,
-      k: req.query.k || 6,
+      k: req.query.k || 5,
       threshold: req.query.threshold || 0.75,
     });
 
