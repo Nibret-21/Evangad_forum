@@ -1,7 +1,11 @@
+
 import { Link } from "react-router-dom";
 import styles from "./Landing.module.css";
 
 export default function Landing() {
+  // TEMP FIX: replace with real auth state (context / redux / hook)
+  const isAuthenticated = false;
+
   return (
     <main className={styles.page}>
       <header className={styles.header}>
@@ -17,8 +21,13 @@ export default function Landing() {
           <a href="#overview">Overview</a>
           <a href="#features">Features</a>
           <a href="#how">How it works</a>
-          <Link to="/login">Sign in</Link>
-          <Link to="/register" className={styles.headerBtn}>
+
+          <Link to={isAuthenticated ? "/dashboard" : "/auth"}>Sign in</Link>
+
+          <Link
+            to={isAuthenticated ? "/dashboard" : "/auth"}
+            className={styles.headerBtn}
+          >
             Create account
           </Link>
         </nav>
@@ -39,11 +48,17 @@ export default function Landing() {
           </p>
 
           <div className={styles.actions}>
-            <Link to="/register" className={styles.primaryBtn}>
+            <Link
+              to={isAuthenticated ? "/dashboard" : "/auth"}
+              className={styles.primaryBtn}
+            >
               Get started
             </Link>
 
-            <Link to="/login" className={styles.secondaryBtn}>
+            <Link
+              to={isAuthenticated ? "/ask" : "/auth"}
+              className={styles.secondaryBtn}
+            >
               Sign in to ask
             </Link>
           </div>
@@ -180,7 +195,13 @@ export default function Landing() {
       <section className={styles.cta}>
         <h2>Ready when you are</h2>
         <p>Start a thread, search related topics, or help another learner.</p>
-        <Link to="/register">Create free account</Link>
+        {/* <Link to="/register">Create free account</Link> */}
+        <Link
+          to={isAuthenticated ? "/ask" : "/auth"}
+          className={styles.secondaryBtn}
+        >
+          Create free account
+        </Link>
       </section>
 
       <footer className={styles.footer}>
@@ -198,3 +219,48 @@ export default function Landing() {
     </main>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
